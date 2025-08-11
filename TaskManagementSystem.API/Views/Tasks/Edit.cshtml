@@ -1,0 +1,165 @@
+@model TaskManagementSystem.API.Models.TaskViewModel
+@{
+    ViewData["Title"] = "Edit Task";
+}
+
+<div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <a href="@Url.Action("Index", "Tasks")" class="text-blue-600 hover:text-blue-800 font-medium flex items-center transition-colors duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Tasks
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">Edit Task</h1>
+                <p class="text-gray-600 mt-1">Update the details for the task below.</p>
+            </div>
+
+            <div class="p-6">
+                <form asp-action="Edit" method="post" class="space-y-6">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <div>
+                        <label for="Title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="Title" name="Title" value="@Model.Title" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150" />
+                        @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-red-500 text-sm mt-1" })
+                    </div>
+
+                    <div>
+                        <label for="Description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="Description" name="Description" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150">@Model.Description</textarea>
+                        @Html.ValidationMessageFor(model => model.Description, "", new { @class = "text-red-500 text-sm mt-1" })
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="SystemName" class="block text-sm font-medium text-gray-700 mb-1">System Name</label>
+                            <input type="text" id="SystemName" name="SystemName" value="@Model.SystemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150" />
+                            @Html.ValidationMessageFor(model => model.SystemName, "", new { @class = "text-red-500 text-sm mt-1" })
+                        </div>
+
+                        <div>
+                            <label for="Priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                            <select id="Priority" name="Priority" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150">
+                                <option value="Low" selected="@(Model.Priority == PriorityLevel.Low)">Low</option>
+                                <option value="Medium" selected="@(Model.Priority == PriorityLevel.Medium)">Medium</option>
+                                <option value="High" selected="@(Model.Priority == PriorityLevel.High)">High</option>
+                                <option value="Critical" selected="@(Model.Priority == PriorityLevel.Critical)">Critical</option>
+                            </select>
+                            @Html.ValidationMessageFor(model => model.Priority, "", new { @class = "text-red-500 text-sm mt-1" })
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="Status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select id="Status" name="Status" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150">
+                                <option value="Pending" selected="@(Model.Status == TaskManagementSystem.Core.Models.TaskStatus.Pending)">Pending</option>
+                                <option value="InProgress" selected="@(Model.Status == TaskManagementSystem.Core.Models.TaskStatus.InProgress)">In Progress</option>
+                                <option value="Completed" selected="@(Model.Status == TaskManagementSystem.Core.Models.TaskStatus.Completed)">Completed</option>
+                                <option value="OnHold" selected="@(Model.Status == TaskManagementSystem.Core.Models.TaskStatus.OnHold)">On Hold</option>
+                            </select>
+                            @Html.ValidationMessageFor(model => model.Status, "", new { @class = "text-red-500 text-sm mt-1" })
+                        </div>
+
+                        <div>
+                            <label for="DueDate" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                            <input type="date" id="DueDate" name="DueDate" value="@(Model.DueDate.HasValue ? Model.DueDate.Value.ToString("yyyy-MM-dd") : "")" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="AssignedToUserId" class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                        <select id="AssignedToUserId" name="AssignedToUserId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition-all duration-150">
+                            <option value="">Unassigned</option>
+                            @if (ViewBag.Users != null)
+                            {
+                                foreach (var u in (IEnumerable<SelectListItem>)ViewBag.Users)
+                                {
+                                    if (Model.AssignedToUserId.HasValue && u.Value == Model.AssignedToUserId.Value.ToString())
+                                    {
+                                        <option value="@u.Value" selected>@u.Text</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@u.Value">@u.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <a href="@Url.Action("Index", "Tasks")" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set minimum date to today for due date input
+            const dueDateInput = document.getElementById('DueDate');
+            if (dueDateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dueDateInput.setAttribute('min', today);
+            }
+
+            // Form validation with smooth animations
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const titleInput = document.getElementById('Title');
+                    const descriptionInput = document.getElementById('Description');
+
+                    if (!titleInput.value.trim()) {
+                        e.preventDefault();
+                        titleInput.classList.add('border-red-500', 'animate-pulse');
+                        setTimeout(() => titleInput.classList.remove('animate-pulse'), 1000);
+                    }
+
+                    if (!descriptionInput.value.trim()) {
+                        e.preventDefault();
+                        descriptionInput.classList.add('border-red-500', 'animate-pulse');
+                        setTimeout(() => descriptionInput.classList.remove('animate-pulse'), 1000);
+                    }
+                });
+            }
+
+            // Add smooth transitions to form inputs
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.classList.add('ring-2', 'ring-blue-300');
+                });
+
+                input.addEventListener('blur', function() {
+                    this.classList.remove('ring-2', 'ring-blue-300');
+                });
+            });
+
+            // Add animation to save button on click
+            const saveButton = document.querySelector('button[type="submit"]');
+            if (saveButton) {
+                saveButton.addEventListener('click', function() {
+                    this.classList.add('animate-spin');
+                    setTimeout(() => this.classList.remove('animate-spin'), 1000);
+                });
+            }
+        });
+    </script>
+}

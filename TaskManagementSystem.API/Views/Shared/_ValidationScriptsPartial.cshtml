@@ -1,0 +1,60 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Custom validation animations
+        $.validator.setDefaults({
+            highlight: function(element) {
+                $(element).closest('.form-group').addClass('has-error');
+                $(element).addClass('animate-pulse border-red-500');
+                setTimeout(() => $(element).removeClass('animate-pulse'), 1000);
+            },
+            unhighlight: function(element) {
+                $(element).closest('.form-group').removeClass('has-error');
+                $(element).removeClass('border-red-500');
+            },
+            errorElement: 'span',
+            errorClass: 'text-red-500 text-sm mt-1',
+            errorPlacement: function(error, element) {
+                if (element.parent('.input-group').length) {
+                    error.insertAfter(element.parent());
+                } else {
+                    error.insertAfter(element);
+                }
+            }
+        });
+
+        // Add smooth transitions to form inputs
+        $('input, select, textarea').focus(function() {
+            $(this).addClass('ring-2 ring-blue-300 transition-all duration-200');
+        }).blur(function() {
+            $(this).removeClass('ring-2 ring-blue-300');
+        });
+
+        // Add shake animation to invalid forms
+        $('form').submit(function() {
+            if (!$(this).valid()) {
+                $(this).addClass('animate-shake');
+                setTimeout(() => $(this).removeClass('animate-shake'), 500);
+            }
+        });
+    });
+</script>
+
+<style>
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    .animate-shake {
+        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    .animate-pulse {
+        animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .5; }
+    }
+</style>

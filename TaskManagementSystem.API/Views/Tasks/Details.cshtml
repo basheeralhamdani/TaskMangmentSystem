@@ -1,0 +1,183 @@
+@model TaskManagementSystem.API.Models.TaskViewModel
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.signalR && window.appHubConnection && '@Model.Id') {
+                // join task-specific group to receive inline updates
+                window.appHubConnection.invoke('JoinTaskGroup', '@Model.Id').catch(console.error);
+
+                // Add inline handler to append new comments in real-time
+                window.appHubConnection.on('TaskCommentAdded', function (payload) {
+                    if (!payload || payload.taskId !== '@Model.Id') return;
+                    const ul = document.querySelector('ul.space-y-4');
+                    if (!ul) return;
+                    const li = document.createElement('li');
+                    li.className = 'bg-gray-50 rounded-md p-3';
+                    li.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-gray-700 font-medium">New comment</div>
+                            <div class="text-xs text-gray-400">${new Date(payload.when).toLocaleString()}</div>
+                        </div>
+                        <p class="text-sm text-gray-800 mt-1"></p>`;
+                    li.querySelector('p').textContent = payload.comment ?? '';
+                    ul.prepend(li);
+                });
+            }
+        });
+    </script>
+}
+
+@{
+    ViewData["Title"] = "Task Details";
+}
+
+<div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <a href="@Url.Action("Index", "Tasks")" class="text-blue-600 hover:text-blue-800 font-medium flex items-center transition-colors duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Tasks
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">@Model.Title</h1>
+                <p class="text-gray-600 mt-1">@Model.Description</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                <div class="md:col-span-2">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Task Information</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">System</h3>
+                            <p class="mt-1 text-sm text-gray-900">@Model.SystemName</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Description</h3>
+                            <p class="mt-1 text-sm text-gray-900">@Model.Description</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Status</h3>
+                            <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                @(Model.Status == TaskStatus.Completed ? "bg-green-100 text-green-800" :
+                                  Model.Status == TaskStatus.Pending ? "bg-yellow-100 text-yellow-800" :
+                                  Model.Status == TaskStatus.InProgress ? "bg-blue-100 text-blue-800" :
+                                  "bg-gray-100 text-gray-800")">
+                                @Model.Status
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Priority</h3>
+                            <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                @(Model.Priority == PriorityLevel.Critical ? "bg-red-100 text-red-800" :
+                                  Model.Priority == PriorityLevel.High ? "bg-orange-100 text-orange-800" :
+                                  Model.Priority == PriorityLevel.Medium ? "bg-yellow-100 text-yellow-800" :
+                                  "bg-green-100 text-green-800")">
+                                @Model.Priority
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Assigned To</h3>
+                            <p class="mt-1 text-sm text-gray-900">@Model.AssignedToUsername</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Dates</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Created</h3>
+                            <p class="mt-1 text-sm text-gray-900">@Model.CreationDate.ToString("yyyy-MM-dd HH:mm")</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Due Date</h3>
+                            <p class="mt-1 text-sm text-gray-900">
+                                @(Model.DueDate.HasValue ? Model.DueDate.Value.ToString("yyyy-MM-dd") : "No due date")
+                            </p>
+                        </div>
+                        @if (Model.DueDate.HasValue && Model.DueDate.Value > DateTime.Now)
+                        {
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Days Remaining</h3>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    @(Model.DueDate.Value.Subtract(DateTime.Now).Days) days
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Comments</h2>
+                        <ul class="space-y-4">
+                            @if (Model.Comments != null && Model.Comments.Any())
+                            {
+                                foreach (var c in Model.Comments)
+                                {
+                                    <li class="bg-gray-50 rounded-md p-3">
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-sm text-gray-700 font-medium">@c.User?.Username</div>
+                                            <div class="text-xs text-gray-400">@c.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+                                        </div>
+                                        <p class="text-sm text-gray-800 mt-1">@c.Content</p>
+                                    </li>
+                                }
+                            }
+                            else
+                            {
+                                <li class="text-sm text-gray-500">No comments yet.</li>
+                            }
+                        </ul>
+
+                        <form asp-action="AddComment" method="post" class="mt-4 space-y-2">
+                            <input type="hidden" name="TaskId" value="@Model.Id" />
+                            <textarea name="Content" rows="3" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Write a comment..."></textarea>
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Add Comment</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Admin Actions</h2>
+                        @if (User.IsInRole("Manager") || User.IsInRole("TaskAdministrator") || User.IsInRole("SystemAdministrator"))
+                        {
+                            <form asp-action="ChangeStatus" method="post" class="space-y-3">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <label class="block text-sm font-medium text-gray-700">Change Status</label>
+                                <select name="newStatus" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    @foreach (var status in Enum.GetValues(typeof(TaskStatus)))
+                                    {
+                                        <option value="@status" selected="@(Model.Status == (TaskStatus)status)">@status</option>
+                                    }
+                                </select>
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Update Status</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="text-sm text-gray-500">Only administrators can change task status.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                <a href="@Url.Action("Edit", "Tasks", new { id = Model.Id })" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
+                    Edit Task
+                </a>
+                <a href="@Url.Action("Delete", "Tasks", new { id = Model.Id })" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-300">
+                    Delete Task
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
